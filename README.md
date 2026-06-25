@@ -1,8 +1,16 @@
 # Nexus-Inventor
-an App making software - Fully drag and drop
-visit my site at https://harrydinto-cloud.github.io/Nexus-Inventor/
 
-#Screenshots
-![Nexus Inventor Screenshot](images/screenshot1.png)
-click start building to go to this interface you can make an app and publish to a custom domain
-![Nexus Inventor Screenshot](images/screenshot2.png)
+an App making software - Fully drag and drop
+
+Visit my site:
+https://harrydinto-cloud.github.io/Nexus-Inventor/
+
+## Screenshots
+
+![Nexus Inventor Screenshot 1](screenshot1.png)
+
+Click Start Building to go to this interface.
+
+![Nexus Inventor Screenshot 2](screenshot2.png)
+
+You can make an app and publish it to a custom domain.
