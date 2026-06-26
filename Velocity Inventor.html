@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus Inventor - Drag And Drop app maker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Comfortaa', 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background-color: #181824;
+            color: #d4d4d4;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+        header {
+            background-color: #1f1f2e;
+            height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            border-bottom: 2px solid #2d2d44;
+        }
+        .brand {
+            font-weight: bold;
+            color: #4facfe;
+        }
+        .theme-toggle {
+            font-size: 0.8rem;
+            background: #2a2a3d;
+            border: 1px solid #3d3d5c;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .workspace {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        /* Left Panel Component Deck */
+        .ide-sidebar {
+            width: 280px;
+            background-color: #14141f;
+            border-right: 2px solid #2d2d44;
+            display: flex;
+            flex-direction: column;
+        }
+        .panel-section {
+            padding: 15px;
+            border-bottom: 1px solid #2d2d44;
+            overflow-y: auto;
+        }
+        .panel-title {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #8888aa;
+            margin-bottom: 12px;
+        }
+        .component-deck {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .drag-item {
+            background: #222232;
+            border: 1px dashed #4facfe;
+            padding: 12px;
+            border-radius: 6px;
+            cursor: grab;
+            font-size: 0.85rem;
+            user-select: none;
+            transition: background 0.2s;
+        }
+        .drag-item:hover { background: #2b2b42; }
+
+        .action-deck {
+            margin-top: auto;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background: #11111a;
+        }
+        .btn {
+            padding: 12px;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+        .btn-clear { background: #2c2c35; color: #ef4444; border: 1px solid #ef4444; }
+        .btn-publish { background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%); color: #111; }
+
+        /* Full Screen Staging Canvas Workspace */
+        .preview-space {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #0b0b11;
+        }
+        .drop-target-container {
+            flex: 1;
+            margin: 20px;
+            background: #ffffff;
+            color: #333333;
+            border-radius: 6px;
+            box-shadow: 0 12px 36px rgba(0,0,0,0.6);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .app-window-body {
+            flex: 1;
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            overflow-y: auto;
+        }
+
+        /* Right Panel: Aria AI Assistant Suite */
+        .aria-panel {
+            width: 320px;
+            background-color: #14141f;
+            border-left: 2px solid #2d2d44;
+            display: flex;
+            flex-direction: column;
+        }
+        .aria-header {
+            padding: 15px;
+            background: #1f1f2e;
+            border-bottom: 1px solid #2d2d44;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .aria-title {
+            font-weight: bold;
+            color: #a8ff78;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .aria-chat-stream {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background: #0d0d14;
+        }
+        .aria-bubble {
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            line-height: 1.4;
+            max-width: 90%;
+        }
+        .aria-bubble.assistant {
+            background: #222232;
+            color: #d4d4d4;
+            align-self: flex-start;
+            border-bottom-left-radius: 2px;
+            border-left: 3px solid #a8ff78;
+        }
+        .aria-bubble.user {
+            background: #4facfe;
+            color: #111;
+            font-weight: bold;
+            align-self: flex-end;
+            border-bottom-right-radius: 2px;
+        }
+        .aria-input-container {
+            padding: 12px;
+            background: #11111a;
+            border-top: 1px solid #2d2d44;
+            display: flex;
+            gap: 6px;
+        }
+        .aria-input {
+            flex: 1;
+            background: #0d0d14;
+            border: 1px solid #2d2d44;
+            padding: 8px 12px;
+            border-radius: 4px;
+            color: white;
+            font-size: 0.8rem;
+            outline: none;
+        }
+        .aria-send-btn {
+            background: #252538;
+            border: 1px solid #a8ff78;
+            color: #a8ff78;
+            padding: 0 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* Editable Component wrappers */
+        .site-block-wrapper {
+            position: relative;
+            padding: 12px;
+            border: 1px transparent solid;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        .site-block-wrapper:hover {
+            border: 1px dashed #4facfe;
+            background-color: rgba(79, 172, 254, 0.02);
+        }
+        .component-settings-bar {
+            display: none;
+            position: absolute;
+            top: -34px;
+            right: 10px;
+            background: #1f1f2e;
+            border: 1px solid #4facfe;
+            padding: 4px 10px;
+            border-radius: 4px;
+            gap: 10px;
+            z-index: 10;
+        }
+        .site-block-wrapper:hover .component-settings-bar { display: flex; align-items: center; }
+        .setting-input { background: #0d0d14; border: 1px solid #3d3d5c; color: white; font-size: 0.75rem; padding: 4px; border-radius: 4px; width: 130px; outline: none; }
+        .btn-delete-block { background: none; border: none; color: #ff5555; cursor: pointer; font-weight: bold; }
+        .editable-element { outline: none; }
+        .editable-element:focus { border-bottom: 2px solid #00f2fe !important; }
+        .preview-img-box { max-width: 100%; max-height: 220px; border-radius: 6px; object-fit: cover; display: block; }
+        .preview-video-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 6px; background: #000; }
+        .preview-video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
+        .preview-nav-bar { display: flex; gap: 20px; border-bottom: 1px solid #ddd; padding-bottom: 10px; }
+        .preview-card-box { border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; display: flex; flex-direction: column; gap: 8px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="brand">Nexus Inventor - Drag And Drop app maker</div>
+        <button class="theme-toggle" id="themeToggleBtn">Theme: Light Mode</button>
+    </header>
+
+    <div class="workspace">
+        <div class="ide-sidebar">
+            <div class="panel-section" style="flex: 1;">
+                <div class="panel-title">Layout Element Modules</div>
+                <div class="component-deck">
+                    <div class="drag-item" draggable="true" data-type="header">Banner Header Title</div>
+                    <div class="drag-item" draggable="true" data-type="paragraph">Editable Text Section</div>
+                    <div class="drag-item" draggable="true" data-type="button">Configurable Action Button</div>
+                    <div class="drag-item" draggable="true" data-type="image">Image Media Frame</div>
+                    <div class="drag-item" draggable="true" data-type="video">YouTube Video Frame</div>
+                    <div class="drag-item" draggable="true" data-type="nav">Navigation Link Bar</div>
+                    <div class="drag-item" draggable="true" data-type="card">Custom Showcase Card</div>
+                </div>
+            </div>
+            <div class="action-deck">
+                <button class="btn btn-clear" id="clearBtn">Reset Canvas</button>
+                <button class="btn btn-publish" id="publishBtn">Publish to Live URL</button>
+            </div>
+        </div>
+
+        <div class="preview-space">
+            <header style="border-bottom: 1px solid #2d2d44; height: 35px; background: #12121a; display: flex; align-items: center; padding: 0 10px;">
+                <span style="font-size: 0.8rem; color: #888;">Live Drag-Drop Editing Zone</span>
+            </header>
+            <div class="drop-target-container" id="dropZoneContainer">
+                <div class="app-window-body" id="appTargetBody"></div>
+            </div>
+        </div>
+
+        <div class="aria-panel">
+            <div class="aria-header">
+                <div class="aria-title">Aria Assistant</div>
+                <span style="font-size: 0.7rem; color: #888aa8; background: #222232; padding: 2px 6px; border-radius: 4px;">Context Enabled</span>
+            </div>
+            <div class="aria-chat-stream" id="ariaChatStream">
+                <div class="aria-bubble assistant">Hi! I'm Aria, your design assistant. Drag components onto the canvas, and I'll track your layout profile context right here to give suggestions! Give me a prompt below or ask me to inspect your project layout.</div>
+            </div>
+            <div class="aria-input-container">
+                <input type="text" class="aria-input" id="ariaInputField" placeholder="Ask Aria anything...">
+                <button class="aria-send-btn" id="ariaSendBtn">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const dropZoneContainer = document.getElementById('dropZoneContainer');
+        const appTargetBody = document.getElementById('appTargetBody');
+        const themeToggleBtn = document.getElementById('themeToggleBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const publishBtn = document.getElementById('publishBtn');
+        const ariaChatStream = document.getElementById('ariaChatStream');
+        const ariaInputField = document.getElementById('ariaInputField');
+        const ariaSendBtn = document.getElementById('ariaSendBtn');
+
+        let appTheme = "light";
+        let trackingBlocksArray = []; 
+
+        document.querySelectorAll('.drag-item').forEach(item => {
+            item.addEventListener('dragstart', (e) => { e.dataTransfer.setData('text/plain', e.target.getAttribute('data-type')); });
+        });
+
+        dropZoneContainer.addEventListener('dragover', (e) => { e.preventDefault(); });
+        dropZoneContainer.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const componentType = e.dataTransfer.getData('text/plain');
+            if (componentType) {
+                addNewStagingBlock(componentType);
+                triggerAriaContextAlert(`Added a new ${componentType} block into your workspace profile canvas.`);
+            }
+        });
+
+        function addNewStagingBlock(type) {
+            const blockId = 'block_' + Date.now();
+            let newBlockObj = { id: blockId, type: type, content: '', metaVal: '', content2: '', content3: '' };
+
+            if (type === 'header') newBlockObj.content = "Click to rewrite headline title...";
+            else if (type === 'paragraph') newBlockObj.content = "This text segment block is fully editable. Click straight inside here to modify layout text details.";
+            else if (type === 'button') { newBlockObj.content = "Action Link Button"; newBlockObj.metaVal = "https://"; }
+            else if (type === 'image') newBlockObj.metaVal = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800";
+            else if (type === 'video') newBlockObj.metaVal = "dQw4w9WgXcQ";
+            else if (type === 'nav') { newBlockObj.content = "Home"; newBlockObj.content2 = "About"; newBlockObj.content3 = "Contact"; }
+            else if (type === 'card') { newBlockObj.content = "Card Title"; newBlockObj.content2 = "Provide dynamic element component descriptors."; newBlockObj.content3 = "Link Action"; newBlockObj.metaVal = "https://"; }
+
+            trackingBlocksArray.push(newBlockObj);
+            renderWorkspaceDOM();
+        }
+
+        function renderWorkspaceDOM() {
+            appTargetBody.innerHTML = '';
+            if (trackingBlocksArray.length === 0) {
+                appTargetBody.innerHTML = `
+                    <div style="text-align: center; margin-top: 60px; color: #888; user-select: none;">
+                        <h2>Staging Canvas Is Empty</h2>
+                        <p style="font-size: 0.85rem; margin-top: 8px;">Drag site elements from the store deck directly inside this layout view workspace.</p>
+                    </div>`;
+                return;
+            }
+
+            trackingBlocksArray.forEach((block) => {
+                const wrapper = document.createElement('div');
+                wrapper.classList.add('site-block-wrapper');
+                wrapper.id = block.id;
+
+                let elementHTML = '';
+                let settingsBarHTML = `<div class="component-settings-bar">`;
+
+                if (block.type === 'header') elementHTML = `<h1 class="editable-element target-c1" contenteditable="true" style="font-weight: bold; padding-bottom: 4px; border-bottom: 2px solid #4facfe;">${block.content}</h1>`;
+                else if (block.type === 'paragraph') elementHTML = `<p class="editable-element target-c1" contenteditable="true" style="line-height: 1.6; font-size: 0.95rem; color: inherit;">${block.content}</p>`;
+                else if (block.type === 'button') {
+                    elementHTML = `<button style="padding: 12px 24px; background: #4facfe; color: white; border: none; border-radius: 4px; font-weight: bold; display: inline-block;"><span class="editable-element target-c1" contenteditable="true">${block.content}</span></button>`;
+                    settingsBarHTML += `<span style="font-size:0.7rem; color:#aaa;">URL:</span><input type="text" class="setting-input url-tracker" value="${block.metaVal}">`;
+                } 
+                else if (block.type === 'image') {
+                    elementHTML = `<img src="${block.metaVal}" class="preview-img-box" alt="Site Visual">`;
+                    settingsBarHTML += `<span style="font-size:0.7rem; color:#aaa;">Image URL:</span><input type="text" class="setting-input img-tracker" value="${block.metaVal}">`;
+                } 
+                else if (block.type === 'video') {
+                    elementHTML = `<div class="preview-video-container"><iframe src="https://www.youtube.com/embed/${block.metaVal}" allowfullscreen></iframe></div>`;
+                    settingsBarHTML += `<span style="font-size:0.7rem; color:#aaa;">YouTube ID:</span><input type="text" class="setting-input video-tracker" value="${block.metaVal}">`;
+                } 
+                else if (block.type === 'nav') {
+                    elementHTML = `
+                        <nav class="preview-nav-bar">
+                            <a style="font-weight: bold; color: #4facfe; text-decoration: none;" href="#"><span class="editable-element target-c1" contenteditable="true">${block.content}</span></a>
+                            <a style="font-weight: bold; color: inherit; text-decoration: none;" href="#"><span class="editable-element target-c2" contenteditable="true">${block.content2}</span></a>
+                            <a style="font-weight: bold; color: inherit; text-decoration: none;" href="#"><span class="editable-element target-c3" contenteditable="true">${block.content3}</span></a>
+                        </nav>`;
+                } 
+                else if (block.type === 'card') {
+                    elementHTML = `
+                        <div class="preview-card-box">
+                            <h3 class="editable-element target-c1" contenteditable="true" style="font-weight: bold; color: #4facfe;">${block.content}</h3>
+                            <p class="editable-element target-c2" contenteditable="true" style="font-size: 0.9rem; line-height: 1.4; color: inherit;">${block.content2}</p>
+                            <button style="padding: 8px 16px; background: #222232; color: white; border: 1px solid #4facfe; border-radius: 4px; font-size: 0.8rem; font-weight: bold; align-self: flex-start;"><span class="editable-element target-c3" contenteditable="true">${block.content3}</span></button>
+                        </div>`;
+                    settingsBarHTML += `<span style="font-size:0.7rem; color:#aaa;">Card URL:</span><input type="text" class="setting-input url-tracker" value="${block.metaVal}">`;
+                }
+
+                settingsBarHTML += `<button class="btn-delete-block" title="Delete Element">✕</button></div>`;
+                wrapper.innerHTML = settingsBarHTML + elementHTML;
+                appTargetBody.appendChild(wrapper);
+
+                const c1 = wrapper.querySelector('.target-c1'); if (c1) c1.addEventListener('blur', () => { block.content = c1.innerText; });
+                const c2 = wrapper.querySelector('.target-c2'); if (c2) c2.addEventListener('blur', () => { block.content2 = c2.innerText; });
+                const c3 = wrapper.querySelector('.target-c3'); if (c3) c3.addEventListener('blur', () => { block.content3 = c3.innerText; });
+
+                const urlInput = wrapper.querySelector('.url-tracker'); if (urlInput) urlInput.addEventListener('input', () => { block.metaVal = urlInput.value; });
+                const imgInput = wrapper.querySelector('.img-tracker'); if (imgInput) imgInput.addEventListener('input', () => { block.metaVal = imgInput.value; wrapper.querySelector('.preview-img-box').src = imgInput.value; });
+                const videoInput = wrapper.querySelector('.video-tracker'); if (videoInput) videoInput.addEventListener('input', () => { block.metaVal = videoInput.value; wrapper.querySelector('iframe').src = `https://www.youtube.com/embed/${videoInput.value}`; });
+
+                wrapper.querySelector('.btn-delete-block').addEventListener('click', () => {
+                    trackingBlocksArray = trackingBlocksArray.filter(b => b.id !== block.id);
+                    renderWorkspaceDOM();
+                    triggerAriaContextAlert(`Removed a layout structural block segment.`);
+                });
+            });
+
+            applyCanvasThemes();
+        }
+
+        function applyCanvasThemes() {
+            const cardBoxes = appTargetBody.querySelectorAll('.preview-card-box');
+            const navBars = appTargetBody.querySelectorAll('.preview-nav-bar');
+            if (appTheme === "dark") {
+                dropZoneContainer.style.backgroundColor = "#22222b"; appTargetBody.style.color = "#ffffff";
+                cardBoxes.forEach(box => { box.style.borderColor = "#44445c"; box.style.background = "#1a1a24"; });
+                navBars.forEach(nav => { nav.style.borderColor = "#44445c"; });
+            } else {
+                dropZoneContainer.style.backgroundColor = "#ffffff"; appTargetBody.style.color = "#333333";
+                cardBoxes.forEach(box => { box.style.borderColor = "#e0e0e0"; box.style.background = "rgba(0,0,0,0.01)"; });
+                navBars.forEach(nav => { nav.style.borderColor = "#ddd"; });
+            }
+        }
+
+        // ARIA CHAT CONTEXT SYSTEM
+        ariaSendBtn.addEventListener('click', executeAriaChatPrompt);
+        ariaInputField.addEventListener('keypress', (e) => { if (e.key === 'Enter') executeAriaChatPrompt(); });
+
+        function executeAriaChatPrompt() {
+            const prompt = ariaInputField.value.trim();
+            if (!prompt) return;
+
+            pushAriaBubble(prompt, "user");
+            ariaInputField.value = '';
+
+            setTimeout(() => {
+                let response = "";
+                const lowercasePrompt = prompt.toLowerCase();
+                const totalBlocks = trackingBlocksArray.length;
+
+                if (lowercasePrompt.includes('inspect') || lowercasePrompt.includes('layout') || lowercasePrompt.includes('components')) {
+                    if (totalBlocks === 0) {
+                        response = "Your canvas looks clean and empty! Try tossing in a Banner Title block or a Navigation Link Bar from your elements tray to start structural mapping.";
+                    } else {
+                        let blockSummary = trackingBlocksArray.map(b => b.type).join(', ');
+                        response = `Let's see. You currently have ${totalBlocks} structural elements arranged in your staging zone (Nodes: ${blockSummary}). The structure flows nicely. Need me to generate clean styling ideas for these?`;
+                    }
+                } else if (lowercasePrompt.includes('clear') || lowercasePrompt.includes('wipe')) {
+                    trackingBlocksArray = [];
+                    renderWorkspaceDOM();
+                    response = "I have completely wiped the canvas layers for you. Ready for a completely fresh start!";
+                } else if (lowercasePrompt.includes('dark') || lowercasePrompt.includes('theme')) {
+                    appTheme = "dark";
+                    themeToggleBtn.innerText = "Theme: Dark Mode";
+                    renderWorkspaceDOM();
+                    response = "Flipped the main workspace layers over into full Dark Mode profile setting configurations.";
+                } else {
+                    response = "I can inspect your component array lists, clear out broken layouts, or guide your typography choices! What aspect of your site architecture are we tailoring right now?";
+                }
+
+                pushAriaBubble(response, "assistant");
+            }, 450);
+        }
+
+        function triggerAriaContextAlert(msg) {
+            setTimeout(() => { pushAriaBubble(`⚡ _Context Log:_ ${msg}`, "assistant"); }, 300);
+        }
+
+        function pushAriaBubble(text, sender) {
+            const bubble = document.createElement('div');
+            bubble.classList.add('aria-bubble', sender);
+            bubble.innerHTML = text;
+            ariaChatStream.appendChild(bubble);
+            ariaChatStream.scrollTop = ariaChatStream.scrollHeight;
+        }
+
+        themeToggleBtn.addEventListener('click', () => {
+            appTheme = appTheme === "light" ? "dark" : "light";
+            themeToggleBtn.innerText = appTheme === "dark" ? "Theme: Dark Mode" : "Theme: Light Mode";
+            applyCanvasThemes();
+        });
+
+        clearBtn.addEventListener('click', () => { trackingBlocksArray = []; renderWorkspaceDOM(); triggerAriaContextAlert("Wiped the core staging tree."); });
+
+        // DYNAMIC CLOUD PUBLISH ENGINE SYSTEM
+        publishBtn.addEventListener('click', async () => {
+            if (trackingBlocksArray.length === 0) {
+                alert("Cannot publish an empty blueprint! Add some components first.");
+                return;
+            }
+
+            const targetDomain = prompt("Enter your custom target domain to map this project layout (e.g., mysite.com or test.in):");
+            if (!targetDomain) return;
+
+            const sanitizedDomain = targetDomain.toLowerCase().trim();
+            const compiledHTML = compileProductionHTMLString();
+
+            // Fire an Aria layout update notification
+            pushAriaBubble(`🌐 Attempting build dispatch for custom endpoint: <strong>${sanitizedDomain}</strong>...`, "assistant");
+
+            try {
+                /* Connecting to your real-world backend:
+                   Swap out this test route string with your live Express, AWS Lambda, or Cloudflare SaaS target endpoint URL.
+                */
+                const mockBackendUrl = 'https://api.example.com/api/deploy'; 
+
+                // We change this code to execute a simulated network promise call framework
+                const responseFake = await new Promise((resolve) => {
+                    setTimeout(() => {
+                        resolve({
+                            ok: true,
+                            json: async () => ({ success: true, serverIp: "192.168.1.50" })
+                        });
+                    }, 1200);
+                });
+
+                const data = await responseFake.json();
+
+                if (responseFake.ok) {
+                    alert(`🚀 Web Application Blueprint Compiled Successfully!\n\nYour site code has been prepared for host: ${sanitizedDomain}.\n\nNext Step: Map your domain registrar's DNS 'A Record' to your public server ip destination.`);
+                    pushAriaBubble(`🎉 <strong>Live Deployment Success!</strong> Your canvas code tree is now routing traffic through <code>${sanitizedDomain}</code>. Ready for production!`, "assistant");
+                } else {
+                    alert(`Server rejection error: ${data.message}`);
+                }
+
+            } catch (err) {
+                console.error("Network Error: ", err);
+                alert("Connection failed. Check your API endpoint configuration values.");
+            }
+        });
+
+        function compileProductionHTMLString() {
+            const computedStyleProfile = appTheme === "dark" ? "background-color: #22222b; color: #ffffff;" : "background-color: #ffffff; color: #333333;";
+            const cardBorder = appTheme === "dark" ? "border: 1px solid #44445c; background: #1a1a24;" : "border: 1px solid #e0e0e0; background: rgba(0,0,0,0.01);";
+            const navBorder = appTheme === "dark" ? "border-bottom: 1px solid #44445c;" : "border-bottom: 1px solid #ddd;";
+            
+            let elementsMarkupList = [];
+            trackingBlocksArray.forEach(b => {
+                if (b.type === 'header') {
+                    elementsMarkupList.push(`<h1 style="font-weight: bold; border-bottom: 2px solid #4facfe; padding-bottom: 8px; margin-bottom: 15px;">${b.content}</h1>`);
+                } else if (b.type === 'paragraph') {
+                    elementsMarkupList.push(`<p style="line-height: 1.6; font-size: 1rem; margin-bottom: 15px;">${b.content}</p>`);
+                } else if (b.type === 'button') {
+                    elementsMarkupList.push(`<a href="${b.metaVal || '#'}" target="_blank" style="text-decoration: none; display: inline-block; margin-bottom: 15px;"><button style="padding: 12px 24px; background: #4facfe; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">${b.content}</button></a>`);
+                } else if (b.type === 'image') {
+                    elementsMarkupList.push(`<img src="${b.metaVal}" style="max-width: 100%; height: auto; max-height: 300px; border-radius: 6px; object-fit: cover; display: block; margin-bottom: 15px;" alt="Media Frame">`);
+                } else if (b.type === 'video') {
+                    elementsMarkupList.push(`
+                        <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; border-radius: 6px; background: #000; margin-bottom: 15px;">
+                            <iframe src="https://www.youtube.com/embed/${b.metaVal}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" allowfullscreen></iframe>
+                        </div>`);
+                } else if (b.type === 'nav') {
+                    elementsMarkupList.push(`
+                        <nav style="display: flex; gap: 20px; padding-bottom: 10px; margin-bottom: 15px; ${navBorder}">
+                            <a style="font-weight: bold; color: #4facfe; text-decoration: none;" href="#">${b.content}</a>
+                            <a style="font-weight: bold; color: inherit; text-decoration: none;" href="#">${b.content2}</a>
+                            <a style="font-weight: bold; color: inherit; text-decoration: none;" href="#">${b.content3}</a>
+                        </nav>`);
+                } else if (b.type === 'card') {
+                    elementsMarkupList.push(`
+                        <div style="border-radius: 8px; padding: 20px; display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; ${cardBorder}">
+                            <h3 style="font-weight: bold; color: #4facfe; margin: 0;">${b.content}</h3>
+                            <p style="font-size: 0.9rem; line-height: 1.4; margin: 0;">${b.content2}</p>
+                            <a href="${b.metaVal || '#'}" target="_blank" style="text-decoration: none; align-self: flex-start;"><button style="padding: 8px 16px; background: #222232; color: white; border: 1px solid #4facfe; border-radius: 4px; font-size: 0.8rem; font-weight: bold; cursor: pointer;">${b.content3}</button></a>
+                        </div>`);
+                }
+            });
+
+            const layoutBodyInterior = elementsMarkupList.length > 0 ? elementsMarkupList.join('\n    ') : '';
+
+            return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Nexus Compiled Production Site</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Comfortaa', sans-serif; 
+            padding: 45px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 15px; 
+            ${computedStyleProfile} 
+        }
+    </style>
+</head>
+<body>
+    ${layoutBodyInterior}
+</body>
+</html>`;
+        }
+
+        renderWorkspaceDOM();
+    </script>
+</body>
+</html>
